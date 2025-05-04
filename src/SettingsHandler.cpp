@@ -12,6 +12,7 @@ namespace MaxsuPoise
 		UpdateWeapTypeMult();
 		InitArmorSlotMult();
 		InitTrueHUDSpecialBar();
+		InitWeapKeywordMult();
 
 		static SettingsHandler singleton;
 		auto eventSource = SKSE::GetModCallbackEventSource();
@@ -49,6 +50,28 @@ namespace MaxsuPoise
 			if (weapEnum.has_value()) {
 				weapTypeMultMap[weapEnum.value()] = (std::stof(value));
 			}
+		}
+	}
+
+	void SettingsHandler::InitWeapKeywordMult()
+	{
+		CSimpleIniA ini;
+		if (ini.LoadFile(extraSettingsFile)) {
+			ERROR("Get Error When loading file {}", extraSettingsFile);
+		}
+
+		// get a pointer to the "WeaponKeywordMult" section
+		const CSimpleIniA::TKeyVal* section = ini.GetSection("WeaponKeywordMult");
+		if (!section) {
+			return;
+		}
+
+		// iterate through the key-value pairs in the section
+		for (CSimpleIniA::TKeyVal::const_iterator it = section->begin(); it != section->end(); ++it) {
+			const char* key = it->first.pItem;
+			const char* value = it->second;
+			float multiplier = std::stof(value);
+			weapKeywordMultMap[key] = multiplier;
 		}
 	}
 

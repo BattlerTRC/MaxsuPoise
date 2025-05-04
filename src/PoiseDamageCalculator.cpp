@@ -49,6 +49,15 @@ namespace MaxsuPoise
 		if (a_weapon->HasKeywordString("MaxsuPoise_UniqueWeapStagger"))
 			return a_weapon->GetStagger();
 
+		auto weapKeywords = a_weapon->GetKeywords();
+		for (const auto& keyword : weapKeywords) {
+			std::string editorID = keyword->GetFormEditorID();
+			auto item = SettingsHandler::weapKeywordMultMap.find(editorID);
+			if (item != SettingsHandler::weapKeywordMultMap.end()) {
+				return item->second;
+			}
+		}
+
 		auto weapType = a_weapon->GetWeaponType();
 		auto item = SettingsHandler::weapTypeMultMap.find(weapType);
 		if (item != SettingsHandler::weapTypeMultMap.end()) {
