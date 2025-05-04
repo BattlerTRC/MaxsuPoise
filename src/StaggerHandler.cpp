@@ -2,6 +2,7 @@
 #include "Hooks/PoiseRegenHandler.h"
 #include "PoiseDamageCalculator.h"
 #include "PoiseHealthHandler.h"
+#include "SpecialBar.h"
 #include "Utils.h"
 
 namespace MaxsuPoise
@@ -38,16 +39,30 @@ namespace MaxsuPoise
 		auto totalPoiseHealth = PoiseHealthHandler::GetTotalPoiseHealth(target);
 		auto currentPoiseHealth = PoiseHealthHandler::GetCurrentPoiseHealth(target);
 		auto poiseDamage = PoiseDamageCalculator::GetWeaponPoiseDamage(a_hitData);
-		currentPoiseHealth -= poiseDamage;
-
 		auto staggerLevel = GetStaggerLevel(poiseDamage / totalPoiseHealth);
 		auto immuneLevel = ImmuneLevelCalculator::GetTotalImmuneLevel(target);
+
+		// Changes to fit the use of the TrueHUD special bar better.
+
+		int recoveryState = RecoveryStateHandler::GetRecoveryState(target);
+		if (recoveryState == 0) {
+			currentPoiseHealth -= poiseDamage;
+		}
+
 		if (currentPoiseHealth <= 0.f) {
 			TryStagger(target, 1.0f, aggressor);
 			if (RE::IsStaggering(target)) {
 				staggerProtectTime = StaggerProtectHandler::GetMaxStaggerProtectTime();
 				StaggerProtectHandler::SetStaggerProtectTimer(target, staggerProtectTime);
-				currentPoiseHealth = totalPoiseHealth;
+				RegenDelayHandler::SetPoiseRegenDelayTimer(target, 0.1f);
+				RecoveryStateHandler::SetRecoveryState(target, 1);
+
+				auto specialBar = SpecialBar::GetSingleton();
+				if (specialBar->enabled) {
+					specialBar->SetBarColor(target->GetHandle(), 0xFF6200);
+					specialBar->FlashSpecialBar(target->GetHandle());
+				}
+				currentPoiseHealth = 1.0f;
 			}
 		}
 		else if (staggerProtectTime <= 0.f) {
@@ -57,7 +72,10 @@ namespace MaxsuPoise
 		}
 
 		PoiseHealthHandler::SetCurrentPoiseHealth(target, currentPoiseHealth);
-		RegenDelayHandler::SetPoiseRegenDelayTimer(target, RegenDelayHandler::GetMaxRegenDelayTime());
+
+		if (recoveryState == 0) {
+			RegenDelayHandler::SetPoiseRegenDelayTimer(target, RegenDelayHandler::GetMaxRegenDelayTime());
+		}
 
 		auto selectedRef = RE::Console::GetSelectedRef();
 		if (selectedRef && target == selectedRef.get()) {
@@ -98,16 +116,30 @@ namespace MaxsuPoise
 		auto totalPoiseHealth = PoiseHealthHandler::GetTotalPoiseHealth(a_target);
 		auto currentPoiseHealth = PoiseHealthHandler::GetCurrentPoiseHealth(a_target);
 		auto poiseDamage = PoiseDamageCalculator::GetMagicPoiseDamage(a_target, a_staggerMult, a_aggressor);
-		currentPoiseHealth -= poiseDamage;
-
 		auto staggerLevel = GetStaggerLevel(poiseDamage / totalPoiseHealth);
 		auto immuneLevel = ImmuneLevelCalculator::GetTotalImmuneLevel(a_target);
+
+		int recoveryState = RecoveryStateHandler::GetRecoveryState(a_target);
+		if (!recoveryState) {
+			currentPoiseHealth -= poiseDamage;
+		}
+
 		if (currentPoiseHealth <= 0.f) {
 			TryStagger(a_target, 1.0f, a_aggressor);
 			if (RE::IsStaggering(a_target)) {
 				staggerProtectTime = StaggerProtectHandler::GetMaxStaggerProtectTime();
 				StaggerProtectHandler::SetStaggerProtectTimer(a_target, staggerProtectTime);
-				currentPoiseHealth = totalPoiseHealth;
+				RegenDelayHandler::SetPoiseRegenDelayTimer(a_target, 0.1f);
+				RecoveryStateHandler::SetRecoveryState(a_target, 1);
+
+				auto specialBar = SpecialBar::GetSingleton();
+
+				if (specialBar->enabled) {
+					specialBar->SetBarColor(a_target->GetHandle(), 0xFF6200);
+					specialBar->FlashSpecialBar(a_target->GetHandle());
+				}
+				
+				currentPoiseHealth = 1.0f;
 			}
 		}
 		else if (staggerProtectTime <= 0.f) {
@@ -117,7 +149,10 @@ namespace MaxsuPoise
 		}
 
 		PoiseHealthHandler::SetCurrentPoiseHealth(a_target, currentPoiseHealth);
-		RegenDelayHandler::SetPoiseRegenDelayTimer(a_target, RegenDelayHandler::GetMaxRegenDelayTime());
+
+		if (recoveryState == 0) {
+			RegenDelayHandler::SetPoiseRegenDelayTimer(a_target, RegenDelayHandler::GetMaxRegenDelayTime());
+		}
 
 		auto selectedRef = RE::Console::GetSelectedRef();
 		if (selectedRef && a_target == selectedRef.get()) {

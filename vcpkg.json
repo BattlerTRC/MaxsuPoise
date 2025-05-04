@@ -12,7 +12,7 @@
     "simpleini",
     "xbyak"
   ],
-  "builtin-baseline": "cd1099f42a3c2ee28dc68e3db3f6f88658982736",
+  "builtin-baseline": "41c447cc210dc39aa85d4a5f58b4a1b9e573b3dc",
   "overrides": [
     {
       "name": "xbyak",

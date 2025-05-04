@@ -1,14 +1,17 @@
 #include "SettingsHandler.h"
 #include "SimpleIni.h"
+#include "SpecialBar.h"
 
 namespace MaxsuPoise
 {
 	static constexpr char fileName[] = R"(Data\SKSE\Plugins\MaxsuPoise.ini)";
+	static constexpr char extraSettingsFile[] = R"(Data\SKSE\Plugins\MaxsuPoise_ExtraSettings.ini)";
 
 	bool SettingsHandler::Register()
 	{
 		UpdateWeapTypeMult();
 		InitArmorSlotMult();
+		InitTrueHUDSpecialBar();
 
 		static SettingsHandler singleton;
 		auto eventSource = SKSE::GetModCallbackEventSource();
@@ -51,13 +54,11 @@ namespace MaxsuPoise
 
 	void SettingsHandler::InitArmorSlotMult()
 	{
-		static constexpr char armorSlotFile[] = R"(Data\SKSE\Plugins\MaxsuPoise_ArmorSlot.ini)";
-
 		auto& BipeSlotEnumTbl = dku::static_enum<BipedSlot>();
 
 		CSimpleIniA ini;
-		if (ini.LoadFile(armorSlotFile))  // Load the ini file
-			ERROR("Get Error When loading file {}", armorSlotFile);
+		if (ini.LoadFile(extraSettingsFile))  // Load the ini file
+			ERROR("Get Error When loading file {}", extraSettingsFile);
 
 		// get a pointer to the "ArmorSlotMult" section
 		const CSimpleIniA::TKeyVal* section = ini.GetSection("ArmorSlotMult");
@@ -74,6 +75,22 @@ namespace MaxsuPoise
 				armorSlotMultMap[armorSlotEnum.value()] = (std::stof(value));
 			}
 		}
+	}
+
+	void SettingsHandler::InitTrueHUDSpecialBar()
+	{
+		CSimpleIniA ini;
+		ini.SetUnicode();
+		ini.LoadFile(extraSettingsFile);
+
+		bool TrueHUDEnable = ini.GetBoolValue("TrueHUD", "SpecialBar", true);
+		INFO("TrueHUDEnable is: {}", TrueHUDEnable)
+
+		if (!TrueHUDEnable) {
+			return;
+		}
+
+		MaxsuPoise::SpecialBar::GetSingleton()->Initialize();
 	}
 
 }

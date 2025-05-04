@@ -30,6 +30,7 @@ namespace MaxsuPoise
 
 		static void UpdateWeapTypeMult();
 		static void InitArmorSlotMult();
+		static void InitTrueHUDSpecialBar();
 	};
 
 }

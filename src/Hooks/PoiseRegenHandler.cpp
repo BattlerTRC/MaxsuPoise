@@ -1,5 +1,6 @@
 #include "Hooks/PoiseRegenHandler.h"
 #include "PoiseHealthHandler.h"
+#include "SpecialBar.h"
 #include "Utils.h"
 
 namespace MaxsuPoise
@@ -23,11 +24,25 @@ namespace MaxsuPoise
 
 		const auto totalPoiseHealth = PoiseHealthHandler::GetTotalPoiseHealth(a_target);
 		auto currentPoiseHealth = PoiseHealthHandler::GetCurrentPoiseHealth(a_target);
+		auto recoveryState = RecoveryStateHandler::GetRecoveryState(a_target);
+
+		// Some small changes are made here so that if the user enables the TrueHUD special bar, the bar is visually consistent.
+		// The mod's original code made the bar instantly snap back to full after it was depleted which looked strange.
 
 		if (!a_target->IsInCombat() || (currentPoiseHealth - totalPoiseHealth) >= 0.01f) {
+
+			// End recovery state if poise is completely recovered or combat ends.
+			if (recoveryState != 0) {
+				RecoveryStateHandler::SetRecoveryState(a_target, 0);
+				auto specialBar = SpecialBar::GetSingleton();
+				if (specialBar->enabled) {
+					specialBar->RevertBarColor(a_target->GetHandle());
+				}
+			}
+
 			currentPoiseHealth = totalPoiseHealth;
 		}
-		else if (!RE::IsStaggering(a_target)) {
+		else {
 			auto regenDelayTimer = RegenDelayHandler::GetPoiseRegenDelayTimer(a_target);
 			if (regenDelayTimer > 0.f)
 				RegenDelayHandler::SetPoiseRegenDelayTimer(a_target, regenDelayTimer - a_delta);
@@ -36,8 +51,17 @@ namespace MaxsuPoise
 			}
 
 			auto staggerProtectTimer = StaggerProtectHandler::GetStaggerProtectTimer(a_target);
-			if (staggerProtectTimer > 0.f)
+			if (staggerProtectTimer > 0.f) {
 				StaggerProtectHandler::SetStaggerProtectTimer(a_target, staggerProtectTimer - a_delta);
+			}
+			else {
+				// End recovery state if stagger protect timer runs out.
+				RecoveryStateHandler::SetRecoveryState(a_target, 0);
+				auto specialBar = SpecialBar::GetSingleton();
+				if (specialBar->enabled) {
+					specialBar->RevertBarColor(a_target->GetHandle());
+				}
+			}
 		}
 
 		PoiseHealthHandler::SetCurrentPoiseHealth(a_target, currentPoiseHealth);
@@ -84,6 +108,20 @@ namespace MaxsuPoise
 	float StaggerProtectHandler::GetMaxStaggerProtectTime()
 	{
 		return GetGameSettingFloat("fMaxsuPoise_StaggerProtectTime", 0.85f);
+	}
+
+	int RecoveryStateHandler::GetRecoveryState(RE::Actor* a_target)
+	{
+		int result = 0;
+		if (!a_target || !a_target->GetGraphVariableInt(RECOVERY_STATE, result))
+			WARN("Not Graph Variable Float Found: {}", RECOVERY_STATE);
+
+		return result;
+	}
+
+	bool RecoveryStateHandler::SetRecoveryState(RE::Actor* a_target, const int& a_in)
+	{
+		return a_target && a_target->SetGraphVariableFloat(RECOVERY_STATE, a_in);
 	}
 
 }

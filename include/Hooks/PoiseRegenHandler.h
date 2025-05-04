@@ -75,4 +75,16 @@ namespace MaxsuPoise
 		static float GetMaxStaggerProtectTime();
 	};
 
+	class RecoveryStateHandler
+	{
+		RecoveryStateHandler() = delete;
+		~RecoveryStateHandler() = delete;
+
+		static constexpr char RECOVERY_STATE[] = "MaxsuPoise_RecoveryState";
+
+	public:
+		static int GetRecoveryState(RE::Actor* a_target);
+		static bool SetRecoveryState(RE::Actor* a_target, const int& a_in);
+	};
+
 }
